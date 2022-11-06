@@ -6,7 +6,8 @@ class CoordinateWise:
         self.base_learners = base_learners
         self.name_base_learners = ""
         for alg in base_learners:
-            self.name_base_learners += " " + alg.get_name()
+            self.name_base_learners += alg.get_name() + "; "
+        self.name_base_learners = self.name_base_learners[:-2]
         
     def update(self, grad):
         for i,bl in enumerate(self.base_learners):

@@ -13,7 +13,7 @@ class LearningRateSqrtTime:
         return self.eta0/math.sqrt(self.time)
     
     def get_name(self):
-        return "LR: eta0/sqrt(t)"
+        return "LR: "+str(self.eta0)+"/sqrt(t)"
 
 
 class LearningRateSqrtSumSquareGrads:
@@ -28,7 +28,7 @@ class LearningRateSqrtSumSquareGrads:
         return self.eta0/math.sqrt(self.sum_g2)
     
     def get_name(self):
-        return "LR: eta0/sqrt(sum_t ||g_t||^2_2)"
+        return "LR: "+str(self.eta0)+"/sqrt(sum_t ||g_t||^2_2)"
 
 
 class LearningRateConstant:
@@ -42,7 +42,7 @@ class LearningRateConstant:
         return self.eta0
     
     def get_name(self):
-        return "LR: eta0"
+        return "LR: "+str(self.eta0)
 
 
 class LearningRateMaxNormGrad:

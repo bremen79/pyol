@@ -93,10 +93,11 @@ class L2OptimisticOMD:
 
 
 class KT:
-    def __init__(self, d):
+    def __init__(self, d, wealth0=1):
         self.theta = np.zeros(d)
         self.d = d
-        self.wealth = 1
+        self.wealth0 = wealth0
+        self.wealth = wealth0
         self.time = 1
         
     def predict(self):
@@ -111,7 +112,7 @@ class KT:
         return -self.theta/self.time*self.wealth
     
     def get_name(self):
-        return "KT"
+        return "KT: Wealth0="+str(self.wealth0)
 
 
         
@@ -268,5 +269,5 @@ class AdaHedge:
         return weights / np.sum(weights)
     
     def get_name(self):
-        return "AdaHedge"
+        return "AdaHedge: alpha^2="+str(self.alpha2)
 

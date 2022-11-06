@@ -14,7 +14,7 @@ class BilinearSaddlePoint:
         grad_y=-np.dot(np.transpose(x),self.A)
         self.x_player.update(grad_x)
         self.y_player.update(grad_y)
-        return grad_x,grad_y
+        return x,y,grad_x,grad_y
                 
     def get_x(self):
         return self.x_player.get_x()
@@ -25,7 +25,7 @@ class BilinearSaddlePoint:
     def get_name(self):
         return "Bilinear Game: "+self.x_player.get_name()+", "+self.y_player.get_name()
 
-class BilinearSaddlePointAlternation(BilinearSaddlePoint):        
+class BilinearSaddlePointAlternation(BilinearSaddlePoint):
     def update(self):
         y=self.y_player.get_x()
         grad_x=np.dot(self.A,y)
@@ -33,11 +33,28 @@ class BilinearSaddlePointAlternation(BilinearSaddlePoint):
         x=self.x_player.get_x()
         grad_y=-np.dot(np.transpose(x),self.A)
         self.y_player.update(grad_y)
-        return grad_x,grad_y
+        return x, y, grad_x, grad_y
 
     def get_name(self):
         return "Bilinear Game (Alternation): "+self.x_player.get_name()+", "+self.y_player.get_name()
-        
+
+
+class BilinearSaddlePointNextLoss(BilinearSaddlePoint):
+    def update(self):
+        # Y-player reveal its play
+        y=self.y_player.get_x()
+        # Show loss to X-Player and use it to update
+        grad_x=np.dot(self.A,y)
+        self.x_player.update(grad_x)
+        x=self.x_player.get_x()
+        # Y-player updates
+        grad_y=-np.dot(np.transpose(x),self.A)
+        self.y_player.update(grad_y)
+        return x,y, grad_x, grad_y
+
+    def get_name(self):
+        return "Bilinear Game (Alternation): "+self.x_player.get_name()+", "+self.y_player.get_name()
+
 class BilinearSaddlePointBestResponse():
     def __init__(self, A, player, best_response_index=0):
         self.A = A
@@ -67,7 +84,7 @@ class BilinearSaddlePointBestResponse():
             self.best_response_x=y
             grad_x=np.dot(self.A,y)
             self.player.update(grad_x)
-        return grad_x,grad_y
+        return x,y,grad_x,grad_y
             
     def get_x(self):
         if self.best_response_index==1:
