@@ -4,6 +4,7 @@ from .learning_rates import LearningRateSqrtTime
 from .learning_rates import LearningRateSqrtSumSquareGrads
 from .learning_rates import LearningRateConstant
 from .learning_rates import LearningRateMaxNormGrad
+from .oco import MatrixPNormOptimisticFTRL
 from .oco import L2OptimisticFTRL
 from .oco import L2OptimisticOMD
 from .oco import KT
@@ -12,9 +13,11 @@ from .oco import KTExperts
 from .oco import RM
 from .oco import RMPlus
 from .oco import AdaHedge
+from .oco import VAW
 from .projections import ProjL2Ball
 from .projections import ProjSimplex
 from .reductions import CoordinateWise
+from .reductions import MultiTask
 from .saddle_point import BilinearSaddlePoint
 from .saddle_point import BilinearSaddlePointAlternation
 from .saddle_point import BilinearSaddlePointBestResponse

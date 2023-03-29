@@ -2,10 +2,62 @@ import numpy as np
 import math
 from .learning_rates import LearningRateSqrtTime
 
+class MatrixPNormOptimisticFTRL:
+    def __init__(self, d, n, *, q=None, x0=None, lr_handler=None, proj_handler=None, hint_handler=None ):
+        if x0 is not None:
+            self.x0 = x0
+        else:
+            self.x0 = np.zeros((d,n))
+        self.theta = np.zeros((d,n))
+        self.proj_handler = proj_handler
+        self.d = d
+        self.n = n
+        if q is None:
+            self.q = math.log(n)+math.sqrt(math.log(n)*math.log(n)-2*math.log(n))
+        else:
+            self.q = q
+        self.p = self.q/(self.q-1)
+        self.hint=0
+        if hint_handler:
+            self.hint_handler=hint_handler
+        else:
+            self.hint_handler=None
+        if lr_handler:
+            self.lr_handler=lr_handler
+        else:
+            self.lr_handler=LearningRateSqrtTime()
+            
+    def predict(self):
+        return self.get_x()
+    
+    def update(self, grad):
+        self.theta += grad
+        self.lr_handler.update(grad)
+        if self.hint_handler:
+            self.hint_handler.update(grad)
+        
+    def get_x(self):
+        if self.hint_handler:
+            self.hint=self.hint_handler.get_hint()
+        u, s, vh=np.linalg.svd(self.theta+self.hint, full_matrices=False)
+        s=np.power(s,self.q-1)/(np.finfo(np.float32).eps+np.power(np.sum(np.power(s,self.q)),1-2/self.q))
+        #tmp=-(self.theta+self.hint)*self.lr_handler.get_lr()+self.x0
+        tmp=-np.dot(u * s, vh)*self.lr_handler.get_lr()+self.x0
+        if self.proj_handler:
+            tmp = self.proj_handler.proj(tmp)
+        return tmp
+
+    def get_name(self):
+        tmp = "Matrix p-norm"
+        if self.hint_handler:
+            tmp += " Optimistic"
+        tmp += " FTRL, "
+        return tmp+self.lr_handler.get_name()
+
 
 class L2OptimisticFTRL:
     def __init__(self, d, *, x0=None, lr_handler=None, proj_handler=None, hint_handler=None ):
-        if x0:
+        if x0 is not None:
             self.x0 = x0
         else:
             self.x0 = np.zeros(d)
@@ -50,7 +102,7 @@ class L2OptimisticFTRL:
 class L2OptimisticOMD:
     def __init__(self, d, *, x0=None, lr_handler=None, proj_handler=None, hint_handler=None ):
         self.d = d
-        if x0:
+        if x0 is not None:
             self.x = x0
         else:
             self.x = np.zeros(d)
@@ -188,9 +240,19 @@ class KTExperts:
         return "KT for experts"
 
 class RM:
-    def __init__(self, d):
+    def __init__(self, d, *, q=None, hint_handler=None):
         self.theta = np.zeros(d)
         self.d = d
+        if hint_handler:
+            self.hint_handler=hint_handler
+        else:
+            self.hint_handler=None
+        self.hint=0
+        if q is None:
+            self.q = math.log(d)+math.sqrt(math.log(d)*math.log(d)-2*math.log(d))
+        else:
+            self.q = q
+        self.p = self.q/(self.q-1)
 
     def predict(self):
         return np.random.choice(self.d, p=self.get_x())
@@ -199,9 +261,13 @@ class RM:
         x = self.get_x()
         r = np.dot(grad,x) - grad
         self.theta = self.theta + r
-        
+        if self.hint_handler:
+            self.hint_handler.update(r)
+
     def get_x(self):
-        weights = np.maximum(self.theta,0)
+        if self.hint_handler:
+            self.hint=self.hint_handler.get_hint()
+        weights = np.power(np.maximum(self.theta+self.hint,0),self.q-1)
         sum_weights = np.sum(weights)
         return weights / sum_weights if sum_weights>0 else np.full(self.d,1/self.d)
     
@@ -209,7 +275,7 @@ class RM:
         return "RM"
 
 class RMPlus:
-    def __init__(self, d, hint_handler=None):
+    def __init__(self, d, *, q=None, hint_handler=None):
         self.theta = np.zeros(d)
         self.d=d
         if hint_handler:
@@ -218,6 +284,12 @@ class RMPlus:
             self.hint_handler=None
         self.hint=0
         self.previous_hint=0
+        if q is None:
+            self.q = math.log(d)+math.sqrt(math.log(d)*math.log(d)-2*math.log(d))
+        else:
+            self.q = q
+        self.p = self.q/(self.q-1)
+
 
     def predict(self):
         return np.random.choice(self.d, p=self.get_x())
@@ -229,7 +301,7 @@ class RMPlus:
             self.previous_hint=self.hint
             self.hint_handler.update(r)
             self.hint=self.hint_handler.get_hint()
-        self.theta = np.maximum(self.theta - r + self.previous_hint - self.hint,0)
+        self.theta = np.power(np.maximum(np.power(self.theta,self.p-1)  - r + self.previous_hint - self.hint,0),self.q-1)
         
     def get_x(self):
         sum_weights = np.sum(self.theta)
@@ -243,7 +315,7 @@ class RMPlus:
 
 
 class AdaHedge:
-    def __init__(self, d, alpha=None):
+    def __init__(self, d, *, alpha=None):
         self.theta = np.zeros(d)
         self.d=d
         self.alpha2 = alpha*alpha if alpha else math.log(d)
@@ -271,3 +343,27 @@ class AdaHedge:
     def get_name(self):
         return "AdaHedge: alpha^2="+str(self.alpha2)
 
+
+class VAW:
+    def __init__(self, d, *, x0=None, l=1):
+        if x0 is not None:
+            self.x0 = x0
+        else:
+            self.x0 = np.zeros(d)
+        self.theta = np.zeros(d)
+        self.covariance = np.identity(d)*l
+        self.d = d
+            
+    def predict(self):
+        return self.get_x()
+    
+    def update(self, z, y):
+        self.theta = self.theta + y*z
+        self.covariance = self.covariance + np.outer(z,z)
+        
+    def get_x(self, z):
+        return np.dot(np.linalg.inv(self.covariance+np.outer(z,z)),self.theta)
+
+    def get_name(self):
+        tmp = "Vovk-Azoury-Warmuth"
+        return tmp

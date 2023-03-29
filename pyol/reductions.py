@@ -21,3 +21,27 @@ class CoordinateWise:
     
     def get_name(self):
         return "Coordinate Wise: "+self.name_base_learners
+
+class MultiTask:
+    def __init__(self, d, n, base_learners):
+        self.d = d
+        self.n = n
+        self.base_learners = base_learners
+        self.name_base_learners = ""
+        for alg in base_learners:
+            self.name_base_learners += alg.get_name() + "; "
+        self.name_base_learners = self.name_base_learners[:-2]
+        
+    def update(self, grad):
+        for i,bl in enumerate(self.base_learners):
+            bl.update(grad[:,i])
+    
+    def get_x(self):
+        x = np.zeros((self.d,self.n))
+        for i,bl in enumerate(self.base_learners):
+            x[:,i] = bl.get_x()
+        return x
+    
+    def get_name(self):
+        return "MultiTaks: "+self.name_base_learners
+    

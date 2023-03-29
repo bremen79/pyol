@@ -15,7 +15,7 @@ with open(path.join(HERE, 'README.md'), encoding='utf-8') as f:
 # This call to setup() does all the work
 setup(
     name="PyOL",
-    version="0.0.2",
+    version="0.0.3",
     description="A Python library for online learning",
     long_description=long_description,
     long_description_content_type="text/markdown",
